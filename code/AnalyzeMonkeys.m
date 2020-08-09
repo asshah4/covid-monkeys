@@ -3,20 +3,22 @@
 % Clear workspace
 clear; clc; close all;
 
-% Add necessary files to path
-% Need to be in highest biobank folder
+% Add necessary files to path in home folder
 addpath(genpath(pwd));
 
-% sample
-name = 'sample';
-
-loc = [pwd filesep 'data' filesep name filesep name '.mat'];
+% Extract raw data
+name = 'monkeys';
+loc = [pwd filesep 'data' filesep name '.mat'];
 raw = load(loc);
-ecg = raw.volt;
-t = raw.time;
-Fs = 250;
+
+
+
 
 %% Set up HRV
+
+% Frequency
+Fs = 300;
+
 HRVparams = InitializeHRVparams(name);
 HRVparams.Fs = Fs; 
 HRVparams.PeakDetect.REF_PERIOD = 0.150;
