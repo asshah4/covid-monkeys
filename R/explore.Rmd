@@ -1,0 +1,122 @@
+---
+title: "COVID Monkeys"
+subtitle: "HRV Analysis"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: 
+  beamer_presentation:
+    colortheme: beaver
+    slide_level: 1
+    latex_engine: xelatex
+    citation_package: natbib
+classoption:
+- "unknownkeysallowed"
+header-includes:
+  - \usepackage{dcolumn}
+  - \usepackage{float}
+  - \usepackage{graphicx} 
+  - \usepackage{booktabs}
+  - \usepackage{longtable}
+  - \usepackage{array}
+  - \usepackage{multirow}
+  - \usepackage{wrapfig}
+  - \usepackage{colortbl}
+  - \usepackage{pdflscape}
+  - \usepackage{tabu}
+  - \usepackage{threeparttable}
+  - \usepackage{amsmath}
+  - \makeatletter\beamer@ignorenonframefalse\makeatother
+  - \makeatletter\def\fnum@table{\usebeamercolor{caption name}\usebeamerfont*{caption name}\tablename~\thetable}\makeatother
+editor_options: 
+  chunk_output_type: console
+always_allow_html: yes
+---
+
+
+```{r setup, global_options, include=FALSE}
+# Knitr layout options
+knitr::opts_chunk$set(
+  cache = TRUE,
+  warning = FALSE,
+  eval = TRUE,
+  echo = FALSE,
+  include = TRUE,
+  message = FALSE,
+  dpi = 300,
+  dev = "png",
+  options("scipen" = 0, "digits" = 3)
+)
+
+# Libraries
+library(drake)
+loadd(ids)
+loadd(analyzed)
+loadd(removed)
+```
+
+# Introduction
+
+- ECG analysis of monkeys with COVID
+- HRV performed of available signal
+- Monkeys all have SARS-CoV2 infection, half were treated with anti-inflammatories
+
+# Quality of Signal Processing Efforts 
+
+```{r}
+removed %>%
+	group_by(session) %>%
+	arrange(percent_not_analyzed) %>%
+	slice(1) %>%
+	select(c(session, name, visit, lead, tot_wind, percent_not_analyzed)) %>%
+  kable(
+    format = "latex", 
+    booktabs = TRUE,
+    caption = "Best quality per session/lead"
+  ) %>%
+  kable_styling(font_size = 6, latex_options = "striped")
+```
+
+# HRV Findings 
+
+```{r}
+# HRV data
+hrv_measures <- c("n_nmean", "sdnn", "rmssd", "pnn50", "hf", "lf", "ap_en")
+
+analyzed %>%
+	select(c(session, name, visit, lead, hrv_measures)) %>%
+	na.omit() %>% 
+	group_by(session) %>%
+	summarise(
+		NN = mean(n_nmean), SDNN = mean(sdnn), RMSSD = mean(rmssd), PNN50 = mean(pnn50)*100, HF = mean(hf), LF = mean(lf), APEN = mean(ap_en)
+	) %>%
+  kable(
+    format = "latex", 
+    booktabs = TRUE
+  ) %>%
+  kable_styling(font_size = 6, latex_options = "striped")
+```
+
+# HRV over Repeat Sessions
+
+```{r}
+df <- 
+	analyzed %>%
+	group_by(session) %>%
+	select(hrv_measures) %>%
+	summarise_all(mean, na.rm = TRUE) %>%
+	left_join(ids, ., by = "session") %>%
+	na.omit() %>%
+	pivot_longer(cols = hrv_measures, names_to = "hrv", values_to = "values")
+
+ggplot(df, aes(x = visit, y = values, group = name, color = name)) +
+	facet_wrap(~hrv, scales = "free") + 
+	geom_point() + 
+	geom_line() + 
+	theme_minimal() +
+	scale_color_viridis_d() +
+	labs(
+		title = "HRV over repeat visits",
+		x = "Visits",
+		y = "HRV"
+	)
+```
+

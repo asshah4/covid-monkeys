@@ -40,3 +40,4 @@ vignettes/*.pdf
 
 # Matlab files
 *.mat
+*.fig
