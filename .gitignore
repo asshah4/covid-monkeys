@@ -7,6 +7,9 @@
 
 # User-specific files
 .Ruserdata
+.drake/*
+.drake/keys/*
+.drake/drake/*
 
 # Example code in package build process
 *-Ex.R

@@ -7,11 +7,20 @@ plan <- drake_plan(
 
 	# Tidy
 
+	# Write out data
+	write_out_data =
+		write_data(analyzed) %>%
+		write_csv(
+			.,
+			path = file_out("data/results.csv")
+		),
+
 	# Report
 	prelim = if(TRUE) {rmarkdown::render(
 		knitr_in("R/explore.rmd"),
 		output_file = file_out("products/draft-findings.pdf"),
 		output_dir = "products"
-	)}
+	)},
+
 
 )
