@@ -13,12 +13,20 @@ name = 'monkeys_08-12-20';
 loc = [raw_data filesep name '.mat'];
 raw = load(loc);
 EKG = raw.EKG;
+count = numel(EKG);
 
 % Frequency
 Fs = 300;
 
 % Plotting variable
 plotting = 0;
+
+% Get names of variables
+names = extractfield(EKG, 'categoryName')';
+sessions = extractfield(EKG, 'sessionNum')';
+recording = 1:count;
+T = table(recording', names, sessions, 'VariableNames', {'session', 'names', 'visit'});
+writetable(T, 'data/ids.csv');
 
 %% Quality control of monkeys
 
@@ -45,17 +53,17 @@ plotting = 0;
 % 1 = good
 % 2 = no data available at all
 % 3 = good from 100-280 sec
-EKG(3).original.volt = EKG(3).original.volt(110*Fs:270*Fs);
+%EKG(3).original.volt = EKG(3).original.volt(110*Fs:270*Fs);
 % 4 = bad throughout, but can salvage some signal from 130 to 500 sec
 % Voltage / ECG signal
-EKG(4).original.volt = filloutliers(EKG(3).original.volt(130*Fs:500*Fs), ...
-    'clip', 'movmedian', 3000);
+%EKG(4).original.volt = filloutliers(EKG(4).original.volt(130*Fs:500*Fs), ...
+%    'clip', 'movmedian', 3000);
 % 5 = need resmampling to remove outlier throughout
-EKG(5).original.volt = filloutliers(EKG(3).original.volt, ...
-    'clip', 'movmedian', 3000);
+%EKG(5).original.volt = filloutliers(EKG(5).original.volt, ...
+%    'clip', 'movmedian', 3000);
 % 6 = cut poor signal, good from ~ 150 to 575 sec with resampling
-EKG(6).original.volt = filloutliers(EKG(6).original.volt(150*Fs:575*Fs), ...
-    'spline');
+%EKG(6).original.volt = filloutliers(EKG(6).original.volt(150*Fs:575*Fs), ...
+%    'spline');
 
 
 %% Loop through data for single lead data
@@ -228,9 +236,8 @@ monkey = [num2str(i) '_lead_' EKG(i).original(j).lead];
 mkdir(proc_data, monkey);
 
 % Voltage / ECG signal
-ecg = EKG(i).original(j).volt(150*Fs:575*Fs);
+ecg = EKG(i).original(j).volt;
 tm = 0:1/Fs:(length(ecg)-1)/Fs;
-ecg = filloutliers(ecg, 'spline');
 
 
 % Set up HRv parameters
@@ -240,7 +247,7 @@ HRVparams.PeakDetect.REF_PERIOD = 0.250;
 HRVparams.PeakDetect.THRES = .7;    
 HRVparams.preprocess.lowerphysiolim = 60/240;
 HRVparams.preprocess.upperphysiolim = 60/30; 
-HRVparams.windowlength = 300;	      % Default: 300, seconds
+HRVparams.windowlength = 30;	      % Default: 300, seconds
 HRVparams.increment = 30;             % Default: 30, seconds increment
 HRVparams.numsegs = 5;                % Default: 5, number of segments to collect with lowest HR
 HRVparams.RejectionThreshold = .30;   % Default: 0.2, amount (%) of data that can be rejected before a
@@ -266,3 +273,7 @@ r_peaks = jqrs(ecg, HRVparams);
 hold on;
 plot(r_peaks./Fs, ecg(r_peaks),'o');
 legend('ecg signal', 'detected R peaks');
+
+% Run HRV analysis
+[results, resFilenameHRV] = ... 
+    Main_HRV_Analysis(ecg, [], 'ECGWaveform', HRVparams, monkey);

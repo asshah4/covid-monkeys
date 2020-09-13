@@ -1,0 +1,232 @@
+---
+title: "COVID Monkeys"
+subtitle: "HRV Analysis"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: 
+  xaringan::moon_reader:
+    css: [default, metropolis, metropolis-fonts]
+    nature:
+      titleSlideClass: ["center", "middle"]
+---
+
+```{r setup, global_options, include=FALSE}
+# Knitr layout options
+knitr::opts_chunk$set(
+  cache = TRUE,
+  warning = FALSE,
+  eval = TRUE,
+  echo = FALSE,
+  include = TRUE,
+  message = FALSE,
+  dpi = 300,
+  dev = "png",
+  options("scipen" = 0, "digits" = 3)
+)
+
+# Libraries
+library(drake)
+loadd(ids)
+loadd(analyzed)
+loadd(removed)
+
+# Conflicts
+source("../R/packages.R")
+```
+
+# Introduction
+
+- ECG analysis of monkeys with COVID
+- HRV performed of available signal
+- Monkeys all have SARS-CoV2 infection, half were treated with anti-inflammatories
+
+---
+
+# Quality of Signal Processing Efforts 
+
+```{r}
+removed %>%
+	group_by(session) %>%
+	arrange(percent_not_analyzed) %>%
+	slice(1) %>%
+	select(c(session, names, visit, lead, tot_wind, percent_not_analyzed)) %>%
+  kable(
+    format = "html", 
+    caption = "Best quality per session/lead"
+  ) %>%
+  kable_styling(font_size = 8)
+```
+
+---
+
+# HRV Findings 
+
+```{r}
+# HRV data
+hrv_measures <- c("n_nmean", "sdnn", "rmssd", "pnn50", "hf", "lf", "ap_en", "samp_en", "ac", "dc")
+
+analyzed %>%
+	select(c(session, names, visit, lead, hrv_measures)) %>%
+	na.omit() %>% 
+	group_by(session) %>%
+	summarise(
+		NN = mean(n_nmean), SDNN = mean(sdnn), RMSSD = mean(rmssd), PNN50 = mean(pnn50)*100, HF = mean(hf), LF = mean(lf), APEN = mean(ap_en), AC = mean(ac), DC = mean(dc)
+	) %>%
+  kable(
+    format = "html"
+  ) %>%
+  kable_styling(font_size = 6)
+```
+
+---
+
+```{r, fig.height=4}
+df <- 
+	analyzed %>%
+	group_by(session) %>%
+	select(hrv_measures) %>%
+	summarise_all(mean, na.rm = TRUE) %>%
+	left_join(ids, ., by = "session") %>%
+	na.omit() %>%
+	pivot_longer(cols = hrv_measures, names_to = "hrv", values_to = "values")
+
+ggplot(df, aes(x = visit, y = values, group = names, color = names)) +
+	facet_wrap(~hrv, scales = "free") + 
+	geom_point() + 
+	geom_line() + 
+	theme_minimal() +
+	scale_color_viridis_d() +
+	labs(
+		title = "HRV over repeat visits by Monkey",
+		x = "Visits",
+		y = "HRV"
+	)
+```
+
+---
+
+```{r, fig.height=4}
+df <-
+	analyzed %>%
+	group_by(session) %>%
+	select(hrv_measures) %>%
+	summarise_all(mean, na.rm = TRUE) %>%
+	left_join(ids, ., by = "session") %>%
+	na.omit() %>%
+	pivot_longer(cols = hrv_measures, names_to = "hrv", values_to = "values") %>%
+	mutate(treatment = factor(treatment))
+
+ggplot(df, aes(x = visit, y = values, color = treatment)) + 
+	facet_wrap(~hrv, scales = "free") + 
+	geom_smooth(se = FALSE) + 
+	geom_point() + 
+	theme_minimal() +
+	scale_color_viridis_d() +
+	labs(
+		title = "HRV over repeat visits by treatment status",
+		x = "Visits",
+		y = "HRV"
+	)
+
+```
+
+---
+
+# Summary by Treatment 
+
+```{r, results='asis'}
+# Gt approach
+df <-
+	analyzed %>%
+	group_by(session) %>%
+	select(hrv_measures) %>%
+	summarise_all(mean, na.rm = TRUE) %>%
+	left_join(ids, ., by = "session") %>%
+	na.omit() %>%
+	mutate(treatment = factor(treatment)) %>%
+	ungroup()
+
+df %>%
+	select(-c(session, names)) %>%
+	group_by(treatment, visit) %>%
+	summarize(across(where(is.numeric), mean)) %>%
+	ungroup() %>%
+	gt(
+		groupname_col = "treatment",
+		rowname_col = "visit"
+	) %>%
+	tab_header(
+		title = "HRV Changes by Treatment Groups"
+	) %>%
+	tab_spanner(columns = vars(hrv_measures), label = "HRV Measurements") %>%
+	tab_stubhead(label = "Treated") %>%
+	fmt_number(columns = everything(), decimals = 1) %>%
+	tab_options(
+		table.font.size = "small"
+	) %>%
+	as_raw_html()
+```
+
+---
+
+# Repeat Measures Analysis
+
+```{r}
+analyzed %>%
+	group_by(session) %>%
+	select(hrv_measures) %>%
+	summarise_all(mean, na.rm = TRUE) %>%
+	left_join(ids, ., by = "session") %>%
+	na.omit() %>%
+	pivot_longer(cols = hrv_measures, names_to = "hrv", values_to = "values") %>%
+	mutate(treatment = factor(treatment)) %>%
+	ungroup() %>%
+	group_by(hrv) %>%
+	nest() %>%
+	mutate(
+		fit = map(data, ~ aov(values ~ visit + Error(names), data = .x)),
+		tidied = map(fit, tidy)
+	) %>%
+	unnest(tidied) %>%
+	select(-c(data,fit)) %>%
+	na.omit() %>%
+  kable(
+    format = "html"
+  ) %>%
+  kable_styling(font_size = 16)
+```
+
+---
+
+# Continuous HRV Throughout Study
+
+```{r, fig.height = 4.5}
+# Find best data
+best <- 
+	removed %>%
+	select(names, visit, lead, percent_not_analyzed) %>%
+	na.omit() %>%
+	arrange(percent_not_analyzed) %>%
+	group_by(names, visit) %>%
+	slice(1) %>%
+	select(-percent_not_analyzed)
+
+# Trim to best data
+df <- 
+	analyzed %>%
+	left_join(best, ., by = c("names", "visit", "lead")) %>%
+	select(c(names, visit, lead, treatment, t_start, hrv_measures)) %>%
+	na.omit() %>%
+	mutate(treatment = factor(treatment)) %>%
+	pivot_longer(cols = hrv_measures, names_to = "hrv", values_to = "values") %>%
+	filter(!(hrv %in% c("pnn50", "samp_en", "dc")))
+
+# Plot
+ggplot(df, aes(x = t_start, y = values, color = treatment)) + 
+	facet_grid(rows = vars(hrv), cols = vars(visit), scales = "free") + 
+	geom_point() + 
+	scale_color_viridis_d() +
+	theme_minimal()
+
+
+```
+

@@ -5,8 +5,6 @@ plan <- drake_plan(
 	analyzed = get_analyzed(ids),
 	removed = get_removed(ids),
 
-	# Tidy
-
 	# Write out data
 	write_out_data =
 		write_data(analyzed) %>%

@@ -31,7 +31,6 @@ editor_options:
 always_allow_html: yes
 ---
 
-
 ```{r setup, global_options, include=FALSE}
 # Knitr layout options
 knitr::opts_chunk$set(
@@ -51,6 +50,12 @@ library(drake)
 loadd(ids)
 loadd(analyzed)
 loadd(removed)
+
+# Conflicts
+library(conflicted)
+conflict_prefer("select", "dplyr")
+conflict_prefer("filter", "dplyr")
+conflict_prefer("summarize", "dplyr")
 ```
 
 # Introduction
@@ -66,7 +71,7 @@ removed %>%
 	group_by(session) %>%
 	arrange(percent_not_analyzed) %>%
 	slice(1) %>%
-	select(c(session, name, visit, lead, tot_wind, percent_not_analyzed)) %>%
+	select(c(session, names, visit, lead, tot_wind, percent_not_analyzed)) %>%
   kable(
     format = "latex", 
     booktabs = TRUE,
@@ -82,7 +87,7 @@ removed %>%
 hrv_measures <- c("n_nmean", "sdnn", "rmssd", "pnn50", "hf", "lf", "ap_en")
 
 analyzed %>%
-	select(c(session, name, visit, lead, hrv_measures)) %>%
+	select(c(session, names, visit, lead, hrv_measures)) %>%
 	na.omit() %>% 
 	group_by(session) %>%
 	summarise(
@@ -95,7 +100,7 @@ analyzed %>%
   kable_styling(font_size = 6, latex_options = "striped")
 ```
 
-# HRV over Repeat Sessions
+# Summary Longitudinal HRV 
 
 ```{r}
 df <- 
@@ -107,16 +112,104 @@ df <-
 	na.omit() %>%
 	pivot_longer(cols = hrv_measures, names_to = "hrv", values_to = "values")
 
-ggplot(df, aes(x = visit, y = values, group = name, color = name)) +
+ggplot(df, aes(x = visit, y = values, group = names, color = names)) +
 	facet_wrap(~hrv, scales = "free") + 
 	geom_point() + 
 	geom_line() + 
 	theme_minimal() +
 	scale_color_viridis_d() +
 	labs(
-		title = "HRV over repeat visits",
+		title = "HRV over repeat visits by Monkey",
 		x = "Visits",
 		y = "HRV"
 	)
+```
+
+# Summary Longitudinal HRV by Treatment
+
+```{r}
+df <-
+	analyzed %>%
+	group_by(session) %>%
+	select(hrv_measures) %>%
+	summarise_all(mean, na.rm = TRUE) %>%
+	left_join(ids, ., by = "session") %>%
+	na.omit() %>%
+	pivot_longer(cols = hrv_measures, names_to = "hrv", values_to = "values") %>%
+	mutate(treatment = factor(treatment))
+
+ggplot(df, aes(x = visit, y = values, color = treatment)) + 
+	facet_wrap(~hrv, scales = "free") + 
+	geom_smooth(se = FALSE) + 
+	geom_point() + 
+	theme_minimal() +
+	scale_color_viridis_d() +
+	labs(
+		title = "HRV over repeat visits by treatment status",
+		x = "Visits",
+		y = "HRV"
+	)
+
+```
+
+# Summary by Treatment 
+
+```{r, results='asis'}
+# Gt approach
+df <-
+	analyzed %>%
+	group_by(session) %>%
+	select(hrv_measures) %>%
+	summarise_all(mean, na.rm = TRUE) %>%
+	left_join(ids, ., by = "session") %>%
+	na.omit() %>%
+	mutate(treatment = factor(treatment)) %>%
+	ungroup()
+
+df %>%
+	select(-c(session, names)) %>%
+	group_by(treatment, visit) %>%
+	summarize(across(where(is.numeric), mean)) %>%
+	ungroup() %>%
+	gt(
+		groupname_col = "treatment",
+		rowname_col = "visit"
+	) %>%
+	tab_header(
+		title = "HRV Changes by Treatment Groups",
+		subtitle = "Measured at Repeat Visits"
+	) %>%
+	tab_spanner(columns = vars(hrv_measures), label = "HRV Measurements") %>%
+	tab_stubhead(label = "Treated") %>%
+	fmt_number(columns = everything(), decimals = 1) %>%
+	as_latex() 
+```
+
+# Repeat Measures Analysis
+
+```{r}
+analyzed %>%
+	group_by(session) %>%
+	select(hrv_measures) %>%
+	summarise_all(mean, na.rm = TRUE) %>%
+	left_join(ids, ., by = "session") %>%
+	na.omit() %>%
+	pivot_longer(cols = hrv_measures, names_to = "hrv", values_to = "values") %>%
+	mutate(treatment = factor(treatment)) %>%
+	ungroup() %>%
+	group_by(hrv) %>%
+	nest() %>%
+	mutate(
+		fit = map(data, ~ aov(values ~ visit + Error(names), data = .x)),
+		tidied = map(fit, tidy)
+	) %>%
+	unnest(tidied) %>%
+	select(-c(data,fit)) %>%
+	na.omit() %>%
+  kable(
+    format = "latex", 
+    booktabs = TRUE
+  ) %>%
+  kable_styling(font_size = 6, latex_options = "striped")
 ```
 

@@ -10,6 +10,8 @@ library(kableExtra)
 library(stargazer)
 library(gridExtra)
 library(ggthemes)
+library(gt)
+library(gtsummary)
 
 # Statistical tools
 library(Hmisc)
