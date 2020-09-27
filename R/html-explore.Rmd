@@ -74,12 +74,12 @@ analyzed %>%
   kable(
     format = "html"
   ) %>%
-  kable_styling(font_size = 6)
+  kable_styling(font_size = 12)
 ```
 
 ---
 
-```{r, fig.height=4}
+```{r, fig.height=4.5}
 df <- 
 	analyzed %>%
 	group_by(session) %>%
@@ -96,7 +96,7 @@ ggplot(df, aes(x = visit, y = values, group = names, color = names)) +
 	theme_minimal() +
 	scale_color_viridis_d() +
 	labs(
-		title = "HRV over repeat visits by Monkey",
+		title = "Summary HRV over repeat visits by Monkey",
 		x = "Visits",
 		y = "HRV"
 	)
@@ -104,7 +104,7 @@ ggplot(df, aes(x = visit, y = values, group = names, color = names)) +
 
 ---
 
-```{r, fig.height=4}
+```{r, fig.height=4.5}
 df <-
 	analyzed %>%
 	group_by(session) %>%
@@ -120,9 +120,9 @@ ggplot(df, aes(x = visit, y = values, color = treatment)) +
 	geom_smooth(se = FALSE) + 
 	geom_point() + 
 	theme_minimal() +
-	scale_color_viridis_d() +
+	scale_color_viridis_d(option = "E") +
 	labs(
-		title = "HRV over repeat visits by treatment status",
+		title = "Summary HRV by treatment status",
 		x = "Visits",
 		y = "HRV"
 	)
@@ -161,7 +161,7 @@ df %>%
 	tab_stubhead(label = "Treated") %>%
 	fmt_number(columns = everything(), decimals = 1) %>%
 	tab_options(
-		table.font.size = "small"
+		table.font.size = "x-small"
 	) %>%
 	as_raw_html()
 ```
@@ -223,8 +223,8 @@ df <-
 # Plot
 ggplot(df, aes(x = t_start, y = values, color = treatment)) + 
 	facet_grid(rows = vars(hrv), cols = vars(visit), scales = "free") + 
-	geom_point() + 
-	scale_color_viridis_d() +
+	geom_point(size = 0.5, alpha = 0.8) + 
+	scale_color_viridis_d(option = "E") +
 	theme_minimal()
 
 

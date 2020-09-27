@@ -14,11 +14,16 @@ plan <- drake_plan(
 		),
 
 	# Report
-	prelim = if(TRUE) {rmarkdown::render(
+	prelim = if(FALSE) {rmarkdown::render(
 		knitr_in("R/explore.rmd"),
 		output_file = file_out("products/draft-findings.pdf"),
 		output_dir = "products"
 	)},
 
+	draft = if(TRUE) {rmarkdown::render(
+		knitr_in("R/html-explore.rmd"),
+		output_file = file_out("products/slides.html"),
+		output_dir = "products"
+	)},
 
 )
