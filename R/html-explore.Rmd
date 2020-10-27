@@ -28,9 +28,13 @@ library(drake)
 loadd(ids)
 loadd(analyzed)
 loadd(removed)
+loadd(clinical)
 
 # Conflicts
 source("../R/packages.R")
+
+# HRV measure defined
+hrv_measures <- c("n_nmean", "sdnn", "rmssd", "pnn50", "hf", "lf", "ap_en", "samp_en", "ac", "dc")
 ```
 
 # Introduction
@@ -62,8 +66,6 @@ removed %>%
 
 ```{r}
 # HRV data
-hrv_measures <- c("n_nmean", "sdnn", "rmssd", "pnn50", "hf", "lf", "ap_en", "samp_en", "ac", "dc")
-
 analyzed %>%
 	select(c(session, names, visit, lead, hrv_measures)) %>%
 	na.omit() %>% 
@@ -227,6 +229,76 @@ ggplot(df, aes(x = t_start, y = values, color = treatment)) +
 	scale_color_viridis_d(option = "E") +
 	theme_minimal()
 
+```
+
+---
+
+# Clinical severity of illness
+
+```{r, fig.height = 4.5}
+# Combine clinical with ids
+df <- left_join(ids, clinical, by = "names")
+
+ggplot(df, aes(x = relative_to_infection, y = clinical_score)) +
+	stat_ellipse(aes(fill = factor(treatment), group = treatment), geom = "polygon", type = "norm", alpha = 0.2) + 
+	geom_point(aes(color = names), size = 2) +
+	theme_minimal() +
+	scale_color_viridis_d() + 
+	scale_fill_colorblind()
+
+```
+
+---
+
+# Mixed Models
+
+```{r}
+# Find best data
+best <- 
+	removed %>%
+	select(names, visit, lead, treatment, percent_not_analyzed) %>%
+	na.omit() %>%
+	arrange(percent_not_analyzed) %>%
+	group_by(names, visit) %>%
+	slice(1) %>%
+	select(-percent_not_analyzed)
+
+# Trimmed to best HRV
+bestest <- 
+	analyzed %>%
+	select(c(names, visit, lead, treatment, hrv_measures)) %>%
+	mutate(
+		treatment = factor(treatment),
+		visit = factor(visit)
+	) %>%
+	group_by(names, visit, lead) %>%
+	summarise(across(where(is.numeric), ~ mean(.x, na.rm = TRUE))) %>%
+	mutate(visit = as.numeric(visit)) %>%
+	left_join(best, ., by = c("names", "visit", "lead"))
+
+# Add in worst clinical score
+df <-
+	clinical %>%
+	group_by(names) %>%
+	arrange(desc(clinical_score), .by_group = TRUE) %>%
+	na.omit() %>%
+	slice(1) %>%
+	select(names, clinical_score) %>%
+	left_join(bestest, ., by = "names") %>%
+	na.omit()
+
+# Mixed models
+models <-
+	build_models(clinical_score ~ n_nmean + sdnn + rmssd + pnn50 + hf + lf + ap_en + samp_en + ac + dc + (1 | treatment) + (1 | visit), data = df, type = "parallel")
+
+# Present findings
+models %>%
+	filter(effect == "fixed" & term != "(Intercept)") %>%
+	select(-c(effect, group, covar)) %>%
+  kable(
+    format = "html"
+  ) %>%
+  kable_styling(font_size = 18)
 
 ```
 

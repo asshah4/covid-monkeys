@@ -37,7 +37,12 @@ get_analyzed <- function(ids) {
 		janitor::clean_names() %>%
 		separate(pat_id, into = c("session", "lead"), sep = "_lead_") %>%
 		mutate(session = as.numeric(session)) %>%
-		left_join(ids, ., by = "session")
+		left_join(ids, ., by = "session") %>%
+		mutate(
+			hf = log(hf),
+			lf = log(lf),
+			rmssd = log(rmssd)
+		)
 }
 
 get_removed <- function(ids) {
@@ -54,6 +59,22 @@ get_removed <- function(ids) {
 		left_join(ids, ., by = "session")
 }
 
+get_clinical <- function(file) {
+	read_csv(file) %>%
+		janitor::clean_names() %>%
+		mutate(
+			names = tolower(names),
+			date = as.Date(date, format = "%m/%d/%y")
+		)
+}
+
+get_dates <- function(file) {
+	read_xlsx(file) %>%
+		# Remove dates not from visits
+		# Create a visit number to align items
+		group_by(names) %>%
+		arrange(date)
+}
 # Write data
 
 write_data <- function(analyzed) {

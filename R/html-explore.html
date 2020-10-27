@@ -3,7 +3,7 @@
   <head>
     <title>COVID Monkeys</title>
     <meta charset="utf-8" />
-    <meta name="date" content="2020-09-13" />
+    <meta name="date" content="2020-09-28" />
     <link href="html-explore_files/remark-css-0.0.1/default.css" rel="stylesheet" />
     <link href="html-explore_files/remark-css-0.0.1/metropolis.css" rel="stylesheet" />
     <link href="html-explore_files/remark-css-0.0.1/metropolis-fonts.css" rel="stylesheet" />
@@ -16,7 +16,7 @@ class: center, middle, title-slide
 
 # COVID Monkeys
 ## HRV Analysis
-### September 13, 2020
+### September 28, 2020
 
 ---
 
@@ -849,6 +849,122 @@ class: center, middle, title-slide
 # Continuous HRV Throughout Study
 
 ![](html-explore_files/figure-html/unnamed-chunk-7-1.png)&lt;!-- --&gt;
+
+---
+
+# Clinical severity of illness
+
+![](html-explore_files/figure-html/unnamed-chunk-8-1.png)&lt;!-- --&gt;
+
+---
+
+# Mixed Models
+
+&lt;table class="table" style="font-size: 18px; margin-left: auto; margin-right: auto;"&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style="text-align:left;"&gt; outcomes &lt;/th&gt;
+   &lt;th style="text-align:left;"&gt; term &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; estimate &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; std.error &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; statistic &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; conf.low &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; conf.high &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; clinical_score &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; n_nmean &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.034 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.011 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 3.091 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.012 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.056 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; clinical_score &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; sdnn &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.185 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.079 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2.343 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.030 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.339 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; clinical_score &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; rmssd &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.247 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.174 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1.420 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -0.094 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.588 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; clinical_score &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; pnn50 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 73.587 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 71.278 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1.032 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -66.115 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 213.288 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; clinical_score &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; hf &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.003 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.016 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.224 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -0.027 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.034 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; clinical_score &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; lf &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.008 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.006 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1.360 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -0.003 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.018 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; clinical_score &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; ap_en &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -6.855 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 3.650 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -1.878 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -14.009 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.299 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; clinical_score &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; samp_en &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.686 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 3.350 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.205 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -5.880 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 7.253 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; clinical_score &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; ac &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -1.993 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.985 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -2.024 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -3.924 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -0.063 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; clinical_score &lt;/td&gt;
+   &lt;td style="text-align:left;"&gt; dc &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1.398 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 0.814 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1.718 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; -0.197 &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 2.992 &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
     </textarea>
 <style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
 <script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>

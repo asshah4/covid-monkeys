@@ -1,0 +1,383 @@
+---
+title: "COVID Monkeys"
+subtitle: "HRV Analysis"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: 
+  xaringan::moon_reader:
+    css: [default, metropolis, metropolis-fonts]
+    nature:
+      titleSlideClass: ["center", "middle"]
+---
+
+```{r setup, global_options, include=FALSE}
+# Knitr layout options
+knitr::opts_chunk$set(
+  cache = TRUE,
+  warning = FALSE,
+  eval = TRUE,
+  echo = FALSE,
+  include = TRUE,
+  message = FALSE,
+  dpi = 300,
+  dev = "png",
+  options("scipen" = 0, "digits" = 3)
+)
+
+# Libraries
+library(drake)
+loadd(ids)
+loadd(analyzed)
+loadd(removed)
+loadd(clinical)
+
+# Mixed effect
+trim <- clinical %>%
+	filter(!is.na(visit)) %>%
+	group_by(names) %>%
+	mutate(visit = 1:n())
+
+# Conflicts
+#source("../R/packages.R")
+
+# HRV measure defined
+hrv_measures <- c("n_nmean", "sdnn", "rmssd", "pnn50", "hf", "lf", "ap_en", "samp_en", "ac", "dc")
+```
+
+# Introduction
+
+- ECG analysis of monkeys with COVID
+- HRV performed of available signal
+- Monkeys all have SARS-CoV2 infection, half were treated with anti-inflammatories
+- Monkeys were scored for clinical severity at several visits
+
+---
+
+# HRV Findings 
+
+```{r}
+analyzed %>%
+	select(names, visit, treatment, hrv_measures) %>%
+	group_by(visit) %>%
+	summarise(across(everything(), ~mean(.x, na.rm = TRUE))) %>%
+	select(-names) %>%
+	gt() %>%
+	tab_header(
+		title = "HRV over repeat visits"
+	) %>%
+	as_raw_html()
+```
+
+---
+
+# HRV by treatment status
+
+```{r}
+# Gt approach
+df <-
+	analyzed %>%
+	group_by(session) %>%
+	select(hrv_measures) %>%
+	summarise_all(mean, na.rm = TRUE) %>%
+	left_join(ids, ., by = "session") %>%
+	na.omit() %>%
+	mutate(treatment = factor(treatment)) %>%
+	ungroup()
+
+df %>%
+	select(-c(session, names)) %>%
+	group_by(treatment, visit) %>%
+	summarize(across(where(is.numeric), mean)) %>%
+	ungroup() %>%
+	gt(
+		groupname_col = "treatment",
+		rowname_col = "visit"
+	) %>%
+	tab_header(
+		title = "HRV Changes by Treatment Groups"
+	) %>%
+	tab_spanner(columns = vars(hrv_measures), label = "HRV Measurements") %>%
+	tab_stubhead(label = "Treated") %>%
+	fmt_number(columns = everything(), decimals = 1) %>%
+	tab_options(
+		table.font.size = "x-small"
+	) %>%
+	as_raw_html()
+```
+
+---
+
+# Clinical scores over time
+
+```{r, fig.height = 4.5}
+# Add clinical scores in to analyzed data
+df <- left_join(ids[c("names", "treatment")], clinical, by = c("names"))
+
+ggplot(df, aes(x = infection_day, y = score, color = factor(treatment))) +
+	geom_point(aes(shape = names), size = 2) +
+	geom_smooth(method = "lm") + 
+	theme_minimal() +
+	scale_color_viridis_d(option = "E") + 
+	geom_vline(aes(xintercept = 0)) + 
+	labs(
+		title = "Infection Time and Clinical Score",
+		x = "Infection Day",
+		y = "Clinical Score"
+	)
+```
+
+---
+
+# HRV by visit, visualized
+
+```{r, fig.height = 4.5}
+# Combine data sets
+df <-	analyzed %>%
+	pivot_longer(cols = hrv_measures, names_to = "hrv", values_to = "values") %>%
+	na.omit() %>%
+	left_join(., trim, by = c("names", "visit")) %>%
+	select(names, visit, treatment, score, hrv, values) 
+
+ggplot(df, aes(x = visit, y = values, color = factor(visit))) +
+	facet_wrap(~hrv, scales = "free") +
+	geom_col() + 
+	scale_color_viridis_d(option = "D") + 
+	theme_minimal() +
+	theme(
+		legend.position = "none"
+	)
+```
+
+---
+
+# HRV by clinical score, visualized
+
+```{r, fig.height = 4.5}
+# Combine data sets
+df <-	analyzed %>%
+	pivot_longer(cols = hrv_measures, names_to = "hrv", values_to = "values") %>%
+	na.omit() %>%
+	left_join(., trim, by = c("names", "visit")) %>%
+	select(names, visit, treatment, score, hrv, values) 
+
+ggplot(df, aes(x = visit, y = values, color = factor(visit))) +
+	facet_wrap(~hrv, scales = "free") +
+	geom_col() + 
+	scale_color_viridis_d(option = "D") + 
+	theme_minimal() +
+	theme(
+		legend.position = "none"
+	)
+```
+
+# Statistical analysis plan
+
+- linear model of HRV and clinical score at beginning 
+
+- linear model of HRV and clinical score at end
+
+- mixed effect models of clinical score by HRV
+
+- mixed model adding on treatment status
+
+---
+
+# Initial Visit
+
+```{r}
+# Find best data
+best <- 
+	removed %>%
+	select(names, visit, lead, treatment, percent_not_analyzed) %>%
+	na.omit() %>%
+	arrange(percent_not_analyzed) %>%
+	group_by(names, visit) %>%
+	slice(1) %>%
+	select(-percent_not_analyzed)
+
+bester <- 
+	inner_join(best, trim, by = c("names", "visit")) %>%
+	group_by(names) %>%
+	arrange(visit) %>%
+	slice(1)
+
+# Trimmed to best HRV
+bestest <- 
+	analyzed %>%
+	select(c(names, lead, treatment, all_of(hrv_measures))) %>%
+	mutate(treatment = factor(treatment)) %>%
+	group_by(names, lead) %>%
+	summarise(across(where(is.numeric), ~ mean(.x, na.rm = TRUE))) %>%
+	left_join(bester, ., by = c("names", "lead"))
+
+# Best data to regress
+models <-
+	build_models(score ~ n_nmean + sdnn + rmssd + pnn50 + hf + lf + ap_en + samp_en + ac + dc, data = bestest, type = "parallel") %>%
+	select(-c(covar, outcomes, p.value)) %>%
+	filter(term != "(Intercept)")
+
+# Display
+models %>%
+	gt() %>%
+	tab_header(
+		title = "Initial Outcome ~ HRV"
+	) %>%
+	fmt_number(columns = vars(estimate, std.error, statistic, conf.low, conf.high), decimals = 2) %>%
+	tab_footnote(
+		footnote = "Linear model with initial, pre-infection clinical severity as the outcome and each initial visit HRV parameter in a separate model as an exposure",
+		locations = cells_title(groups = "title")
+	) %>%
+	tab_options(
+		table.font.size = "x-small"
+	) %>%
+	as_raw_html()
+```
+
+---
+
+# Final Visit
+
+```{r}
+# Find best data
+best <- 
+	removed %>%
+	select(names, visit, lead, treatment, percent_not_analyzed) %>%
+	na.omit() %>%
+	arrange(percent_not_analyzed) %>%
+	group_by(names, visit) %>%
+	slice(1) %>%
+	select(-percent_not_analyzed)
+
+bester <- 
+	inner_join(best, trim, by = c("names", "visit")) %>%
+	group_by(names) %>%
+	arrange(visit) %>%
+	slice(n())
+
+# Trimmed to best HRV
+bestest <- 
+	analyzed %>%
+	select(c(names, lead, treatment, all_of(hrv_measures))) %>%
+	mutate(treatment = factor(treatment)) %>%
+	group_by(names, lead) %>%
+	summarise(across(where(is.numeric), ~ mean(.x, na.rm = TRUE))) %>%
+	left_join(bester, ., by = c("names", "lead"))
+
+# Best data to regress
+models <-
+	build_models(score ~ n_nmean + sdnn + rmssd + pnn50 + hf + lf + ap_en + samp_en + ac + dc, data = bestest, type = "parallel") %>%
+	select(-c(covar, outcomes)) %>%
+	filter(term != "(Intercept)")
+
+# Display
+models %>%
+	gt() %>%
+	tab_header(
+		title = "Final Outcome ~ HRV",
+		subtitle = "Linear Models"
+	) %>%
+	fmt_number(columns = vars(estimate, std.error, statistic, p.value, conf.low, conf.high), decimals = 2) %>%
+	tab_footnote(
+		footnote = "Linear model with final, post-infection clinical severity as the outcome and each final visit HRV parameter in a separate model as an exposure",
+		locations = cells_title(groups = "title")
+	) %>%
+	tab_options(
+		table.font.size = "x-small"
+	) %>%
+	as_raw_html()
+```
+
+---
+
+# Repeat Measures, Unadjusted
+
+```{r}
+# Find best data
+best <- 
+	removed %>%
+	select(names, visit, lead, treatment, percent_not_analyzed) %>%
+	na.omit() %>%
+	arrange(percent_not_analyzed) %>%
+	group_by(names, visit) %>%
+	slice(1) %>%
+	select(-percent_not_analyzed) %>%
+	inner_join(., trim, by = c("names", "visit"))
+
+# Trimmed to best HRV
+bestest <- 
+	analyzed %>%
+	select(c(names, lead, treatment, all_of(hrv_measures))) %>%
+	mutate(treatment = factor(treatment)) %>%
+	group_by(names, lead) %>%
+	summarise(across(where(is.numeric), ~ mean(.x, na.rm = TRUE))) %>%
+	left_join(best, ., by = c("names", "lead"))
+
+# No treatment effect
+model_unadjusted <-
+	build_models(score ~ treatment + n_nmean + sdnn + rmssd + pnn50 + hf + lf + ap_en + samp_en + ac + dc + (1 | names) + (1 | visit), data = bestest, type = "parallel") %>%
+	filter(effect == "fixed" & term != "(Intercept)") %>%
+	select(-c(covar, outcomes, group, effect)) 
+
+model_unadjusted %>%
+	gt() %>%
+	tab_header(
+		title = "Repeat Measures Analysis, Unadjusted"
+	) %>%
+	fmt_number(columns = vars(estimate, std.error, statistic, conf.low, conf.high), decimals = 2) %>%
+	tab_footnote(
+		footnote = "Each individual term was tested as an exposure variable independently, with the clinical severity being the outcome. The models were all conditioned on individual monkey and visit to account for repeat measures",
+		locations = cells_title(groups = "title")
+	) %>%
+	tab_options(
+		table.font.size = "x-small"
+	) %>%
+  tab_style(
+    style = cell_fill(color = "lightgreen"),
+    locations = cells_body(rows = statistic < -2.0 | statistic > 2.0)
+  ) %>%
+	as_raw_html()
+```
+
+---
+
+# Repeat Measures, Adjusted
+
+```{r}
+# Treatment effect
+model_treatment_adjusted <-
+	build_models(score ~ treatment + n_nmean + sdnn + rmssd + pnn50 + hf + lf + ap_en + samp_en + ac + dc + (1 | names) + (1 | visit), data = bestest, type = "sequential") %>%
+	filter(effect == "fixed" & term != "(Intercept)") %>%
+	filter(covar == 11) %>%
+	select(-c(outcomes, effect, group, covar)) %>%
+	unique()
+
+model_treatment_adjusted %>%
+	gt() %>%
+	tab_header(
+		title = "Repeat Measures by Monkeys and Visit, Adjusted"
+	) %>%
+	fmt_number(columns = vars(estimate, std.error, statistic, conf.low, conf.high), decimals = 2) %>%
+	tab_footnote(
+		footnote = "This is a single model comparing the outcome of clinical severity with adjustment for all treatment and HRV parameters. The models were all conditioned on individual monkey and visit to account for repeat measures",
+		locations = cells_title(groups = "title")
+	) %>%
+	tab_options(
+		table.font.size = "x-small"
+	) %>%
+  tab_style(
+    style = cell_fill(color = "lightgreen"),
+    locations = cells_body(rows = statistic < -2.0 | statistic > 2.0)
+  ) %>%
+	as_raw_html()
+```
+
+---
+
+# Discussion
+
+- In the mixed models (which controlled for repeat measures and individual monkeys), two analyses were performed:
+	- Clinical severity by individual parameters (treatment and HRV)
+	- Clinical severity with all parameters (treatment and HRV)
+	
+- Unadjusted models: Decrease in AC and increase in DC associate with HRV changes over time (repeat visits after infection)
+
+- Adjusted models: HRV happens to show a pattern with repeat visits (not powered to assess AC and DC in these models)
