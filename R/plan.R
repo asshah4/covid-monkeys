@@ -28,7 +28,7 @@ plan <- drake_plan(
 		output_dir = "products"
 	)},
 
-	final = if(FALSE) {rmarkdown::render(
+	final = if(TRUE) {rmarkdown::render(
 		knitr_in("R/results.rmd"),
 		output_file = file_out("products/results.html"),
 		output_dir = "products"

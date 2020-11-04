@@ -154,12 +154,12 @@ ggplot(df, aes(x = visit, y = values, color = factor(visit))) +
 ```{r, fig.height = 4.5}
 # Combine data sets
 df <-	analyzed %>%
-	pivot_longer(cols = hrv_measures, names_to = "hrv", values_to = "values") %>%
+	pivot_longer(cols = all_of(hrv_measures), names_to = "hrv", values_to = "values") %>%
 	na.omit() %>%
 	left_join(., trim, by = c("names", "visit")) %>%
 	select(names, visit, treatment, score, hrv, values) 
 
-ggplot(df, aes(x = visit, y = values, color = factor(visit))) +
+ggplot(df, aes(x = score, y = values, color = factor(score))) +
 	facet_wrap(~hrv, scales = "free") +
 	geom_col() + 
 	scale_color_viridis_d(option = "D") + 
@@ -168,6 +168,8 @@ ggplot(df, aes(x = visit, y = values, color = factor(visit))) +
 		legend.position = "none"
 	)
 ```
+
+---
 
 # Statistical analysis plan
 
@@ -229,6 +231,10 @@ models %>%
 	tab_options(
 		table.font.size = "x-small"
 	) %>%
+  tab_style(
+    style = cell_fill(color = "lightgreen"),
+    locations = cells_body(rows = statistic < -2.0 | statistic > 2.0)
+  ) %>%
 	as_raw_html()
 ```
 
@@ -283,6 +289,10 @@ models %>%
 	tab_options(
 		table.font.size = "x-small"
 	) %>%
+  tab_style(
+    style = cell_fill(color = "lightgreen"),
+    locations = cells_body(rows = statistic < -2.0 | statistic > 2.0)
+  ) %>%
 	as_raw_html()
 ```
 
