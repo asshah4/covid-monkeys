@@ -29,6 +29,7 @@ loadd(ids)
 loadd(analyzed)
 loadd(removed)
 loadd(clinical)
+loadd(necroscopy)
 
 # Mixed effect
 trim <- clinical %>%
@@ -37,7 +38,7 @@ trim <- clinical %>%
 	mutate(visit = 1:n())
 
 # Conflicts
-#source("../R/packages.R")
+#source("./R/packages.R")
 
 # HRV measure defined
 hrv_measures <- c("n_nmean", "sdnn", "rmssd", "pnn50", "hf", "lf", "ap_en", "samp_en", "ac", "dc")
@@ -100,8 +101,7 @@ df %>%
 	fmt_number(columns = everything(), decimals = 1) %>%
 	tab_options(
 		table.font.size = "x-small"
-	) %>%
-	as_raw_html()
+	) 
 ```
 
 ---
@@ -216,6 +216,7 @@ models <-
 	build_models(score ~ n_nmean + sdnn + rmssd + pnn50 + hf + lf + ap_en + samp_en + ac + dc, data = bestest, type = "parallel") %>%
 	select(-c(covar, outcomes, p.value)) %>%
 	filter(term != "(Intercept)")
+
 
 # Display
 models %>%
@@ -379,6 +380,36 @@ model_treatment_adjusted %>%
   ) %>%
 	as_raw_html()
 ```
+
+---
+
+# Inflammatory Markers at Necroscopy
+
+```{r}
+df <- left_join(bestest, necroscopy, by = "names") 
+
+om <- 
+	octomod() %>%
+	core(df) %>%
+	arm(
+		title = "inflammation",
+		plan = gm_csf + if_ng + il_1b + il_4 + il_5 + il_6 + il_12p70 + il_15 + il_16 + tnf_a ~ (1 | names) + (1 | visit) + treatment + n_nmean + sdnn + rmssd + pnn50 + hf + lf + ap_en + samp_en + ac + dc, 
+		exposure = c("(1 | names)", "(1 | visit)"),
+		pattern = "parallel",
+		approach = linear_reg() %>% set_engine("lmer")
+	) %>%
+	equip()
+
+om$equipment$inflammation %>%
+	select(-test_num, -vars, -formulas, -fit) %>%
+	unnest(tidied) %>%
+	filter(effect == "fixed") %>%
+	filter(term != "(Intercept)") %>%
+	select(-group, -x, -effect) %>%
+	filter(statistic > 1.0 | statistic < -1.0)
+
+```
+
 
 ---
 

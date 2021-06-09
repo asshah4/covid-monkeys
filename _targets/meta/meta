@@ -1,0 +1,12 @@
+name|type|data|command|depend|seed|path|time|size|bytes|format|iteration|parent|children|seconds|warnings|error
+raw_data|stem|b353c966fb0fa190|3e602d2a3d292f32|335963f52cc8379d|-979620141||t18787.096635949s|67c8a35aab3f2062|285482|rds|vector|||10.96||
+get_ids|function|2bcaa94f49cf3d49||||||||||||||
+tidy_data|function|57b1cdb441a4cf2f||||||||||||||
+get_analyzed|function|6fb959ec51f386ce||||||||||||||
+write_data|function|3f943bc834357f9b||||||||||||||
+targets|object|a1df4e7fae713832||||||||||||||
+file_ids|stem|56f540427d7924b3|eae65afc9a6cfdc1|ef46db3751d8e999|-449708276|../../data/covid-monkeys/ids-march-2021.csv|t18786.5708873797s|bf58d8be2db7cd4c|323|file|vector|||3.031||
+folder_path|stem|2a1521a4118e8dc1|4fe608ca477c287d|ef46db3751d8e999|1157665292|../../data/covid-monkeys/proc_data/second_analysis/|t18786.591187342s|f8f3b12db3d2b62e|6016|file|vector|||3.021||
+ids|stem|afa20542b351df87|e3dc2f0a93c72c24|5577e808d823deb3|-256046837||t18787.0953179446s|af495a12e81ed9db|446|rds|vector|||3.045||
+proc_data|stem|3fbcfac4a2c44490|38024b9686b8c476|2fd2cd3f62f0811f|-1214640124||t18787.1092011406s|13985d875e8278a6|14029|rds|vector|||3.049||
+summary_data|stem|3c99694d93554be9|30e5f9fdc2d1bdfe|dddb93466643b20a|1586254455|./products/summary_data.csv|t18787.1092012506s|d351e14e42ff661a|30488|file|vector|||0.005||

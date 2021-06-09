@@ -75,6 +75,14 @@ get_dates <- function(file) {
 		group_by(names) %>%
 		arrange(date)
 }
+
+get_necroscopy <- function(file) {
+	read_csv(file) %>%
+		pivot_longer(cols = rhz12:siv, names_to = "names") %>%
+		pivot_wider(names_from = labs, values_from = value) %>%
+		janitor::clean_names() %>%
+		rename(tnf_a = tn_fa)
+}
 # Write data
 
 write_data <- function(analyzed) {
